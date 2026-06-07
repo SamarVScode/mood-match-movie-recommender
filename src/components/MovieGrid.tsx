@@ -1,5 +1,5 @@
 import React from "react";
-import { Movie } from "../mockData";
+import { Movie, GENRE_MAP } from "../types";
 import { Star, Eye, Calendar, Languages, Heart, Sparkles, RefreshCw, Smartphone } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -184,8 +184,26 @@ export default function MovieGrid({
                     </span>
                   </div>
 
+                  {/* Genre tags */}
+                  {movie.genre_ids && movie.genre_ids.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {movie.genre_ids.slice(0, 3).map((gId) => {
+                        const label = GENRE_MAP[gId];
+                        if (!label) return null;
+                        return (
+                          <span 
+                            key={gId} 
+                            className="text-[9px] font-mono font-bold tracking-tight text-rose-450 bg-rose-950/20 border border-rose-900/40 px-1.5 py-0.5 rounded-md"
+                          >
+                            {label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {/* Snippet summary */}
-                  <p className="text-zinc-400 text-xs leading-relaxed line-clamp-3 group-hover:line-clamp-4 transition-all duration-350 pt-1 font-sans">
+                  <p className="text-zinc-400 text-xs leading-relaxed line-clamp-2 group-hover:line-clamp-3 transition-all duration-350 pt-1 font-sans">
                     {movie.overview}
                   </p>
                 </div>
@@ -268,7 +286,7 @@ export default function MovieGrid({
                   </div>
 
                   {/* Bottom Text Panel */}
-                  <div className="space-y-3.5">
+                  <div className="space-y-3 px-1">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-amber-400 text-xs font-bold bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-500/10 flex items-center">
@@ -280,6 +298,24 @@ export default function MovieGrid({
                         {movie.title}
                       </h4>
                     </div>
+
+                    {/* Genre tags */}
+                    {movie.genre_ids && movie.genre_ids.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {movie.genre_ids.slice(0, 2).map((gId) => {
+                          const label = GENRE_MAP[gId];
+                          if (!label) return null;
+                          return (
+                            <span 
+                              key={gId} 
+                              className="text-[9px] font-mono font-bold tracking-tight text-rose-450 bg-rose-950/30 border border-rose-900/40 px-1.5 py-0.5 rounded-md"
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <p className="text-zinc-400 text-[11px] leading-relaxed line-clamp-2">
                       {movie.overview}
@@ -297,68 +333,6 @@ export default function MovieGrid({
               </motion.article>
             );
           })}
-        </div>
-
-        {/* 2. Structured Compact Listing Beneath Swiper */}
-        <div className="pt-2 border-t border-zinc-900/60 space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <Smartphone className="w-4 h-4 text-zinc-550" />
-            <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-500">
-              Complete Suggestions Index ({movies.length})
-            </h4>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5" id="movies-mobile-compact-grid">
-            {movies.map((movie) => {
-              const isFavorited = watchlist.includes(movie.id);
-              return (
-                <div 
-                  key={`compact-${movie.id}`}
-                  className="bg-zinc-950 border border-zinc-900/80 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-lg"
-                  id={`movie-compact-card-${movie.id}`}
-                >
-                  {/* Poster Thumbnail */}
-                  <div className="h-32 rounded-xl overflow-hidden relative bg-zinc-900">
-                    <img
-                      src={movie.poster_path}
-                      alt={movie.title}
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                    
-                    {/* Watchlist Heart */}
-                    <button
-                      onClick={() => onToggleWatchlist(movie.id)}
-                      className="absolute top-1.5 right-1.5 p-1 bg-black/75 backdrop-blur-sm rounded-md text-zinc-450 hover:text-rose-500"
-                    >
-                      <Heart className={`w-3 h-3 ${isFavorited ? "fill-rose-500 text-rose-500" : "text-zinc-500"}`} />
-                    </button>
-                    
-                    {/* Compact Rating */}
-                    <span className="absolute bottom-1.5 left-1.5 font-mono text-[9px] font-black text-amber-400 bg-black/80 px-1 rounded">
-                      ★ {movie.vote_average.toFixed(1)}
-                    </span>
-                  </div>
-
-                  {/* Info block */}
-                  <div className="space-y-1.5 flex-1 flex flex-col justify-between">
-                    <h5 className="font-display font-bold text-xs text-zinc-250 line-clamp-1 leading-snug">
-                      {movie.title}
-                    </h5>
-                    
-                    <button
-                      onClick={() => onOpenReviews(movie)}
-                      className="w-full py-1.5 text-center bg-zinc-900 leading-none text-zinc-400 hover:text-white rounded-lg text-[9px] font-bold border border-zinc-850"
-                    >
-                      View Reviews
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
 
       </div>

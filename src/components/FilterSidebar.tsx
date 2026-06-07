@@ -1,5 +1,5 @@
 import React from "react";
-import { FilterConfig } from "../tmdb";
+import { FilterConfig, countActiveFilters } from "../types";
 import { 
   Sparkles, 
   ShieldAlert, 
@@ -16,7 +16,12 @@ import {
   Ghost,
   Brain,
   Heart,
-  Smile
+  Smile,
+  Users,
+  Glasses,
+  Compass,
+  Lock,
+  Skull
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -25,14 +30,19 @@ interface FilterSidebarProps {
   onChange: (newConfig: FilterConfig) => void;
   isMockMode: boolean;
   onReset: () => void;
+  onApply?: () => void;
 }
 
 export const MOODS = [
-  { id: "comedy", label: "Need a Laugh", color: "from-amber-400/20 to-orange-500/20 hover:border-amber-400 active:bg-amber-400/30 text-amber-300" },
-  { id: "adrenaline", label: "Adrenaline Rush", color: "from-rose-500/20 to-red-600/20 hover:border-rose-500 active:bg-rose-500/30 text-rose-300" },
-  { id: "horror", label: "Spook Me", color: "from-indigo-500/20 to-purple-600/20 hover:border-indigo-500 active:bg-indigo-500/30 text-indigo-300" },
-  { id: "thoughtful", label: "Deep & Thoughtful", color: "from-blue-500/20 to-teal-500/20 hover:border-blue-500 active:bg-blue-500/30 text-blue-300" },
-  { id: "feelgood", label: "Feel-Good Vibes", color: "from-pink-500/20 to-rose-400/20 hover:border-pink-500 active:bg-pink-500/30 text-pink-300" },
+  { id: "comedy", label: "Comedy & Satire", activeBorder: "border-amber-500/60 text-amber-400 bg-amber-950/20 shadow-lg shadow-amber-500/5", activeIndicator: "bg-amber-400" },
+  { id: "adrenaline", label: "Action & Thriller", activeBorder: "border-rose-500/100 text-rose-400 bg-rose-950/30 shadow-lg shadow-rose-500/10", activeIndicator: "bg-rose-500" },
+  { id: "horror", label: "Horror & Suspense", activeBorder: "border-purple-500/60 text-purple-400 bg-purple-950/20 shadow-lg shadow-purple-500/5", activeIndicator: "bg-purple-500" },
+  { id: "thoughtful", label: "Drama & Sci-Fi", activeBorder: "border-blue-500/60 text-blue-400 bg-blue-950/20 shadow-lg shadow-blue-500/5", activeIndicator: "bg-blue-500" },
+  { id: "feelgood", label: "Romance & Feel-Good", activeBorder: "border-pink-500/60 text-pink-400 bg-pink-950/20 shadow-lg shadow-pink-500/5", activeIndicator: "bg-pink-500" },
+  { id: "family", label: "Kids & Family", activeBorder: "border-emerald-500/60 text-emerald-400 bg-emerald-950/20 shadow-lg shadow-emerald-500/5", activeIndicator: "bg-emerald-400" },
+  { id: "mystery", label: "Mystery & Crime", activeBorder: "border-sky-500/60 text-sky-400 bg-sky-950/20 shadow-lg shadow-sky-500/5", activeIndicator: "bg-sky-400" },
+  { id: "documentary", label: "Real & Documentary", activeBorder: "border-teal-500/60 text-teal-400 bg-teal-950/20 shadow-lg shadow-teal-500/5", activeIndicator: "bg-teal-400" },
+  { id: "adult", label: "Intense & Steamy (18+)", activeBorder: "border-red-500/100 text-red-500 bg-red-950/40 shadow-xl shadow-red-500/20 animate-pulse", activeIndicator: "bg-red-500" },
 ];
 
 export const MoodIcon = ({ id, className }: { id: string; className?: string }) => {
@@ -47,6 +57,14 @@ export const MoodIcon = ({ id, className }: { id: string; className?: string }) 
       return <Brain className={className} />;
     case "feelgood":
       return <Heart className={className} />;
+    case "family":
+      return <Users className={className} />;
+    case "mystery":
+      return <Skull className={className} />;
+    case "documentary":
+      return <Compass className={className} />;
+    case "adult":
+      return <Lock className={className} />;
     default:
       return <Sparkles className={className} />;
   }
@@ -64,7 +82,10 @@ export default function FilterSidebar({
   onChange,
   isMockMode,
   onReset,
+  onApply,
 }: FilterSidebarProps) {
+
+  const activeFiltersCount = countActiveFilters(config);
 
   const handleIndustryChange = (industry: "all" | "en" | "hi") => {
     onChange({ ...config, industry });
@@ -104,9 +125,16 @@ export default function FilterSidebar({
       <div className="space-y-6 relative z-10">
         
         {/* Header Indicator */}
-        <div className="flex items-center gap-2.5 pb-4 border-b border-zinc-900">
-          <Sliders className="w-4 h-4 text-rose-500" />
-          <h3 className="font-display font-bold text-sm tracking-widest text-[#f3f4f6] uppercase">Filter Console</h3>
+        <div className="flex items-center justify-between pb-4 border-b border-zinc-900">
+          <div className="flex items-center gap-2.5">
+            <Sliders className="w-4 h-4 text-rose-500" />
+            <h3 className="font-display font-bold text-xs tracking-widest text-zinc-300 uppercase">Filter Console</h3>
+          </div>
+          {activeFiltersCount > 0 && (
+            <span className="bg-rose-500/10 text-rose-400 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border border-rose-500/20">
+              {activeFiltersCount} Active
+            </span>
+          )}
         </div>
 
         {/* Cinematic Environmental Status card */}
@@ -337,15 +365,18 @@ export default function FilterSidebar({
                 <button
                   key={m.id}
                   onClick={() => handleMoodSelect(m.id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold select-none cursor-pointer border relative overflow-hidden transition-all active:scale-95 duration-300 focus:outline-none ${
+                  className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold select-none cursor-pointer border relative transition-all active:scale-95 duration-300 focus:outline-none ${
                     isSelected
-                      ? `bg-gradient-to-r ${m.color} border-zinc-700 text-white shadow-xl flex`
-                      : "bg-zinc-950 hover:bg-zinc-900 border-zinc-900 text-zinc-400 hover:text-zinc-200"
+                      ? `${m.activeBorder}`
+                      : "bg-zinc-950/40 hover:bg-zinc-900/60 border-zinc-900 text-zinc-400 hover:text-zinc-200"
                   }`}
                   id={`mood-badge-${m.id}`}
                 >
-                  <MoodIcon id={m.id} className="w-4 h-4 shrink-0" />
+                  <MoodIcon id={m.id} className={`w-4 h-4 shrink-0 transition-colors ${isSelected ? "text-current" : "text-zinc-500"}`} />
                   <span>{m.label}</span>
+                  {isSelected && (
+                    <span className={`w-1.5 h-1.5 rounded-full ${m.activeIndicator} ml-auto shrink-0`} />
+                  )}
                 </button>
               );
             })}
@@ -354,15 +385,27 @@ export default function FilterSidebar({
 
       </div>
 
-      {/* Reset Operations row */}
-      <button
-        onClick={onReset}
-        className="w-full mt-4 py-3 bg-zinc-950 hover:bg-zinc-900 text-zinc-450 hover:text-white border border-zinc-900 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 duration-200 focus:outline-none"
-        id="btn-sidebar-reset"
-      >
-        <RotateCcw className="w-3 h-3 text-rose-500" />
-        <span>Reset Filter Engine</span>
-      </button>
+      {/* Action buttons row */}
+      <div className="flex items-center gap-3 mt-4 shrink-0 relative z-10">
+        <button
+          onClick={onReset}
+          className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 text-zinc-400 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 duration-200 focus:outline-none"
+          id="btn-sidebar-reset"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+          <span>Reset</span>
+        </button>
+        {onApply && (
+          <button
+            onClick={onApply}
+            className="flex-[2] py-3 bg-gradient-to-r from-amber-500 to-rose-500 hover:opacity-90 text-slate-950 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 duration-200 focus:outline-none shadow-lg shadow-amber-500/10"
+            id="btn-sidebar-apply"
+          >
+            <CheckCircle2 className="w-4 h-4 text-slate-950" />
+            <span>Apply Filters</span>
+          </button>
+        )}
+      </div>
     </aside>
   );
 }

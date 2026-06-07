@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Movie, Review } from "../mockData";
+import { Movie, Review } from "../types";
 import { getMovieReviews } from "../tmdb";
 import { X, MessageSquare, Star, Sparkles, User, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -27,7 +27,7 @@ export default function ReviewDrawer({ movie, isOpen, onClose, apiKey }: ReviewD
           setReviews(reviewsList);
         }
       } catch (error) {
-        console.error("Error loading reviews inside drawer:", error);
+        console.info("Info handling loaded reviews inside drawer fallback:", error);
       } finally {
         if (active) {
           setLoading(false);
