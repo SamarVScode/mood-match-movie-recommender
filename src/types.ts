@@ -15,6 +15,19 @@ export interface Review {
   content: string;
 }
 
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface MovieDetail extends Movie {
+  cast: CastMember[];
+  runtime: number;
+  genres: { id: number; name: string }[];
+}
+
 export interface FilterConfig {
   industry: "all" | "en" | "hi";
   era: "all" | "latest" | "2010s" | "2000s" | "classic";

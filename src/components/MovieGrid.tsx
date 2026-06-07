@@ -216,7 +216,7 @@ export default function MovieGrid({
                     id={`btn-reviews-${movie.id}`}
                   >
                     <Eye className="w-3.5 h-3.5 shrink-0" />
-                    <span>View Reviews</span>
+                    <span>View Details & Reviews</span>
                   </button>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default function MovieGrid({
                       className="w-full py-2 bg-white text-zinc-950 font-bold rounded-xl text-[10px] tracking-wide flex items-center justify-center gap-1.5 transition-transform active:scale-95 duration-200"
                     >
                       <Eye className="w-3.5 h-3.5 text-zinc-900" />
-                      <span>Explore Community Reviews</span>
+                      <span>Explore Details</span>
                     </button>
                   </div>
                 </div>

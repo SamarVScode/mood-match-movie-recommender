@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Movie, Review } from "../types";
-import { getMovieReviews } from "../tmdb";
-import { X, MessageSquare, Star, Sparkles, User, AlertCircle } from "lucide-react";
+import { Movie, Review, CastMember } from "../types";
+import { getMovieReviews, getMovieDetails } from "../tmdb";
+import { X, MessageSquare, Star, Sparkles, User, AlertCircle, Clock, Info, Users } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface ReviewDrawerProps {
@@ -13,21 +13,32 @@ interface ReviewDrawerProps {
 
 export default function ReviewDrawer({ movie, isOpen, onClose, apiKey }: ReviewDrawerProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [cast, setCast] = useState<CastMember[]>([]);
+  const [runtime, setRuntime] = useState<number>(0);
+  const [genres, setGenres] = useState<{id: number, name: string}[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'reviews'>('details');
 
   useEffect(() => {
     if (!isOpen || !movie) return;
 
     let active = true;
-    const fetchReviews = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const reviewsList = await getMovieReviews(apiKey, movie.id, movie.title);
+        const [reviewsList, detailsData] = await Promise.all([
+          getMovieReviews(apiKey, movie.id, movie.title).catch(() => []),
+          getMovieDetails(apiKey, movie.id).catch(() => ({ cast: [], runtime: 0, genres: [] }))
+        ]);
+
         if (active) {
           setReviews(reviewsList);
+          setCast(detailsData.cast);
+          setRuntime(detailsData.runtime);
+          setGenres(detailsData.genres);
         }
       } catch (error) {
-        console.info("Info handling loaded reviews inside drawer fallback:", error);
+        console.info("Info handling loaded details/reviews inside drawer fallback:", error);
       } finally {
         if (active) {
           setLoading(false);
@@ -35,7 +46,7 @@ export default function ReviewDrawer({ movie, isOpen, onClose, apiKey }: ReviewD
       }
     };
 
-    fetchReviews();
+    fetchData();
 
     return () => {
       active = false;
@@ -81,24 +92,58 @@ export default function ReviewDrawer({ movie, isOpen, onClose, apiKey }: ReviewD
             <div className="p-5 md:p-6 bg-zinc-950 border-b border-zinc-900 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-amber-500/5 p-2.5 rounded-xl text-amber-400 border border-amber-500/10">
-                  <MessageSquare className="w-5 h-5 text-amber-500" />
+                  <Info className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-lg text-[#f3f4f6] tracking-wide">
-                    Community Reviews
+                    Movie Dossier
                   </h2>
-                  <p className="text-[10px] text-zinc-500 font-bold font-mono tracking-wider uppercase mt-1">
+                  <p className="text-[10px] text-zinc-500 font-bold font-mono tracking-wider uppercase mt-1 line-clamp-1">
                     {movie.title}
                   </p>
                 </div>
               </div>
+
+              <div className="flex items-center gap-2 md:gap-4">
+                <div className="hidden sm:flex bg-zinc-900 rounded-lg p-1">
+                  <button
+                    onClick={() => setActiveTab('details')}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'details' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    Details
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reviews')}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === 'reviews' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    Reviews <span className="bg-zinc-950 text-[9px] px-1.5 py-0.5 rounded text-amber-500">{reviews.length}</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={onClose}
+                  className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-full transition-all focus:outline-none cursor-pointer border border-zinc-800 bg-zinc-900/50"
+                  aria-label="Close dialog"
+                  id="btn-close-modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Tab Bar */}
+            <div className="sm:hidden flex bg-zinc-900/50 border-b border-zinc-900">
               <button 
-                onClick={onClose}
-                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-full transition-all focus:outline-none cursor-pointer"
-                aria-label="Close dialog"
-                id="btn-close-modal"
+                onClick={() => setActiveTab('details')}
+                className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 ${activeTab === 'details' ? 'border-amber-500 text-white bg-zinc-900' : 'border-transparent text-zinc-500'}`}
               >
-                <X className="w-5 h-5" />
+                Cast & Details
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 flex justify-center items-center gap-1.5 ${activeTab === 'reviews' ? 'border-amber-500 text-white bg-zinc-900' : 'border-transparent text-zinc-500'}`}
+              >
+                Reviews <span className="bg-zinc-950 text-[9px] px-1.5 py-0.5 rounded text-amber-500 border border-zinc-800">{reviews.length}</span>
               </button>
             </div>
 
@@ -136,55 +181,127 @@ export default function ReviewDrawer({ movie, isOpen, onClose, apiKey }: ReviewD
                 </div>
               </div>
 
-              {/* Reviews List */}
-              <div className="space-y-4">
-                <h4 className="font-display font-bold text-xs text-zinc-400 tracking-wider uppercase flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Verified Critiques ({loading ? "..." : reviews.length})</span>
-                </h4>
-
-                {loading ? (
-                  <div className="space-y-4 py-12 text-center bg-black p-6 rounded-2xl border border-dashed border-zinc-900">
-                    <div className="relative inline-flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
-                    </div>
-                    <p className="text-xs text-zinc-500 font-semibold tracking-wide">Syncing critiques from server journals...</p>
-                  </div>
-                ) : reviews.length === 0 ? (
-                  <div className="py-10 text-center bg-black border border-dashed border-zinc-900 rounded-2xl flex flex-col items-center justify-center">
-                    <AlertCircle className="w-8 h-8 text-zinc-650 mb-2.5" />
-                    <h5 className="text-xs font-bold uppercase tracking-wide text-zinc-400">No community reviews found</h5>
-                    <p className="text-[11px] text-zinc-500 mt-1 max-w-xs">Be the first to leave a critique on the TMDB master registries!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {reviews.map((rev, index) => (
-                      <motion.div 
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: index * 0.05 }}
-                        className="p-4 bg-black border border-zinc-900 rounded-2xl space-y-3 hover:border-zinc-850 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-850">
-                              <User className="w-3.5 h-3.5 text-zinc-400" />
-                            </div>
-                            <span className="text-xs font-bold text-zinc-300 font-mono">@{rev.author}</span>
+              {/* Tab Content */}
+              <AnimatePresence mode="wait">
+                {activeTab === 'details' ? (
+                  <motion.div
+                    key="tab-details"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                  >
+                    {/* Extended Details */}
+                    {loading ? (
+                       <div className="space-y-4 py-8 text-center">
+                         <div className="w-6 h-6 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
+                       </div>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-lg text-zinc-300 text-xs font-semibold">
+                            <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>{runtime > 0 ? `${Math.floor(runtime / 60)}h ${runtime % 60}m` : "Runtime N/A"}</span>
                           </div>
-                          <span className="text-[9px] font-bold text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded uppercase font-mono tracking-wider border border-indigo-500/10 select-none">
-                            Critic
-                          </span>
+                          {genres.length > 0 && (
+                            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-lg text-zinc-300 text-xs font-semibold">
+                              <span className="text-zinc-500 font-mono text-[10px]">GENRES:</span>
+                              <span>{genres.map(g => g.name).join(", ")}</span>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed max-h-40 overflow-y-auto pr-1 whitespace-pre-line font-sans">
-                          {rev.content}
-                        </p>
-                      </motion.div>
-                    ))}
-                  </div>
+
+                        {/* Cast Section */}
+                        <div className="space-y-3">
+                          <h4 className="font-display font-bold text-xs text-zinc-400 tracking-wider uppercase flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Top Cast</span>
+                          </h4>
+
+                          {cast.length === 0 ? (
+                            <p className="text-zinc-500 text-xs italic">No cast information available.</p>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                              {cast.slice(0, 5).map((actor) => (
+                                <div key={actor.id} className="bg-black border border-zinc-900 rounded-xl overflow-hidden flex flex-col items-center p-2 text-center">
+                                  <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-900 mb-2 border border-zinc-800 shrink-0">
+                                    {actor.profile_path ? (
+                                      <img src={actor.profile_path} alt={actor.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <User className="w-5 h-5 text-zinc-700" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-zinc-200 text-xs font-bold line-clamp-1 w-full">{actor.name}</p>
+                                  <p className="text-zinc-500 text-[9px] line-clamp-1 w-full mt-0.5">{actor.character}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="tab-reviews"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
+                  >
+                    <h4 className="font-display font-bold text-xs text-zinc-400 tracking-wider uppercase flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Verified Critiques ({loading ? "..." : reviews.length})</span>
+                    </h4>
+
+                    {loading ? (
+                      <div className="space-y-4 py-12 text-center bg-black p-6 rounded-2xl border border-dashed border-zinc-900">
+                        <div className="relative inline-flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
+                        </div>
+                        <p className="text-xs text-zinc-500 font-semibold tracking-wide">Syncing critiques from server journals...</p>
+                      </div>
+                    ) : reviews.length === 0 ? (
+                      <div className="py-10 text-center bg-black border border-dashed border-zinc-900 rounded-2xl flex flex-col items-center justify-center">
+                        <AlertCircle className="w-8 h-8 text-zinc-650 mb-2.5" />
+                        <h5 className="text-xs font-bold uppercase tracking-wide text-zinc-400">No community reviews found</h5>
+                        <p className="text-[11px] text-zinc-500 mt-1 max-w-xs">Be the first to leave a critique on the TMDB master registries!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((rev, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.35, delay: index * 0.05 }}
+                            className="p-4 bg-black border border-zinc-900 rounded-2xl space-y-3 hover:border-zinc-850 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-850">
+                                  <User className="w-3.5 h-3.5 text-zinc-400" />
+                                </div>
+                                <span className="text-xs font-bold text-zinc-300 font-mono">@{rev.author}</span>
+                              </div>
+                              <span className="text-[9px] font-bold text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded uppercase font-mono tracking-wider border border-indigo-500/10 select-none">
+                                Critic
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-400 leading-relaxed max-h-40 overflow-y-auto pr-1 whitespace-pre-line font-sans">
+                              {rev.content}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
 
             </div>
 

@@ -12,7 +12,7 @@ import CinematicRow from "./components/CinematicRow";
 import MoodSelector from "./components/MoodSelector";
 import HeroShowcase from "./components/HeroShowcase";
 import SearchAndFilterTray from "./components/SearchAndFilterTray";
-import { fetchFilteredMovies, fetchSpotlightMovies, fetchLandingFeeds, LandingFeeds, PRESET_SPOTLIGHTS } from "./tmdb";
+import { fetchFilteredMovies, fetchSpotlightMovies, fetchLandingFeeds, LandingFeeds } from "./tmdb";
 import { Movie, FilterConfig, SpotlightItem, countActiveFilters } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -78,7 +78,7 @@ export default function App() {
   const [draftFilters, setDraftFilters] = useState<FilterConfig>({ ...filters });
 
   // Dynamic Spotlights fetched from TMDB
-  const [spotlights, setSpotlights] = useState<SpotlightItem[]>(PRESET_SPOTLIGHTS);
+  const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
 
   // Dynamic search input box state (prevents slow re-renders of list on each key event)
   const [searchVal, setSearchVal] = useState("");
@@ -319,31 +319,31 @@ export default function App() {
   const moodMatchedBaseMovie = (filters.mood !== null && moviesList.length > 0) ? moviesList[0] : null;
 
   const isDynamicHeroActive = moodMatchedBaseMovie !== null;
-  const currentActiveSpotlight = spotlights[activeSpotlightIdx] || PRESET_SPOTLIGHTS[activeSpotlightIdx];
+  const currentActiveSpotlight = spotlights[activeSpotlightIdx] || null;
 
-  const heroTitle = isDynamicHeroActive ? moodMatchedBaseMovie.title : currentActiveSpotlight.title;
+  const heroTitle = isDynamicHeroActive ? moodMatchedBaseMovie?.title : currentActiveSpotlight?.title;
   const heroYear = isDynamicHeroActive 
-    ? (moodMatchedBaseMovie.release_date ? new Date(moodMatchedBaseMovie.release_date).getFullYear().toString() : "N/A") 
-    : currentActiveSpotlight.year;
-  const heroRating = isDynamicHeroActive ? moodMatchedBaseMovie.vote_average : currentActiveSpotlight.rating;
-  const heroBackdrop = isDynamicHeroActive ? moodMatchedBaseMovie.poster_path : currentActiveSpotlight.backdropUrl;
-  const heroOverview = isDynamicHeroActive ? moodMatchedBaseMovie.overview : currentActiveSpotlight.overview;
+    ? (moodMatchedBaseMovie?.release_date ? new Date(moodMatchedBaseMovie.release_date).getFullYear().toString() : "N/A")
+    : currentActiveSpotlight?.year || "N/A";
+  const heroRating = isDynamicHeroActive ? moodMatchedBaseMovie?.vote_average || 0 : currentActiveSpotlight?.rating || 0;
+  const heroBackdrop = isDynamicHeroActive ? moodMatchedBaseMovie?.poster_path || "" : currentActiveSpotlight?.backdropUrl || "";
+  const heroOverview = isDynamicHeroActive ? moodMatchedBaseMovie?.overview || "" : currentActiveSpotlight?.overview || "";
   
   const heroQuote = isDynamicHeroActive 
     ? "Sensory Aligned Top Match" 
-    : currentActiveSpotlight.quote;
+    : currentActiveSpotlight?.quote || "";
     
   const heroTagline = isDynamicHeroActive 
-    ? moodMatchedBaseMovie.overview 
-    : currentActiveSpotlight.tagline;
+    ? moodMatchedBaseMovie?.overview || ""
+    : currentActiveSpotlight?.tagline || "";
 
   const heroMoodName = isDynamicHeroActive 
     ? (MOODS.find(m => m.id === filters.mood)?.label || "Matched Mood") 
-    : currentActiveSpotlight.moodName;
+    : currentActiveSpotlight?.moodName || "";
 
   const heroMoodId = isDynamicHeroActive 
     ? (filters.mood || "thoughtful") 
-    : currentActiveSpotlight.moodId;
+    : currentActiveSpotlight?.moodId || "thoughtful";
 
   return (
     <div className="min-h-screen bg-[#000000] text-zinc-100 flex flex-col font-sans selection:bg-rose-500/20 antialiased overflow-x-hidden">

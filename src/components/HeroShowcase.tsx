@@ -7,7 +7,7 @@ import { MOODS, MoodIcon } from "./FilterSidebar";
 interface HeroShowcaseProps {
   isDynamicHeroActive: boolean;
   moodMatchedBaseMovie: Movie | null;
-  currentActiveSpotlight: SpotlightItem;
+  currentActiveSpotlight: SpotlightItem | null;
   heroTitle: string;
   heroYear: string;
   heroRating: number;
@@ -90,7 +90,7 @@ export default function HeroShowcase({
           {/* Image backdrop (poster or custom backdropUrl) */}
           <AnimatePresence mode="wait">
             <motion.img
-              key={isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight.id}
+              key={isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight?.id || "fallback"}
               src={heroBackdrop}
               alt={heroTitle}
               referrerPolicy="no-referrer"
@@ -150,16 +150,16 @@ export default function HeroShowcase({
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleActivateSpotlight(currentActiveSpotlight)}
+                  onClick={() => currentActiveSpotlight && handleActivateSpotlight(currentActiveSpotlight)}
                   className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-rose-500 text-black text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-1.5 cursor-pointer text-center focus:outline-none"
-                  id={`btn-spotlight-match-${currentActiveSpotlight.id}`}
+                  id={`btn-spotlight-match-${currentActiveSpotlight?.id || 'fallback'}`}
                 >
                   <Play className="w-3.5 h-3.5 fill-black stroke-none" />
                   <span>Instant Match Mood</span>
                 </motion.button>
               )}
 
-              {!isDynamicHeroActive && (
+              {!isDynamicHeroActive && currentActiveSpotlight && (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -173,11 +173,11 @@ export default function HeroShowcase({
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => handleToggleWatchlist(isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight.id)}
+                onClick={() => handleToggleWatchlist(isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight?.id || 0)}
                 className="p-2.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer focus:outline-none"
                 aria-label="Toggle watchlist"
               >
-                <Heart className={`w-4 h-4 ${watchlist.includes(isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight.id) ? "fill-rose-500 text-rose-500" : "text-zinc-550"}`} />
+                <Heart className={`w-4 h-4 ${watchlist.includes(isDynamicHeroActive && moodMatchedBaseMovie ? moodMatchedBaseMovie.id : currentActiveSpotlight?.id || 0) ? "fill-rose-500 text-rose-500" : "text-zinc-550"}`} />
               </motion.button>
             </div>
 

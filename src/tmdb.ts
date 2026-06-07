@@ -235,6 +235,36 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
 /**
  * Fetches premium spotlight/featured movies directly from TMDB
  */
+/**
+ * Fetches movie details and cast
+ */
+export async function getMovieDetails(apiKey: string, movieId: number): Promise<{ cast: any[], runtime: number, genres: any[] }> {
+  const isKeyValid = isValidApiKey(apiKey);
+  if (!isKeyValid) throw new Error("Invalid TMDB API key");
+
+  const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey.trim()}&append_to_response=credits`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`TMDB Movie Details error ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  const cast = (data.credits?.cast || []).slice(0, 10).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    character: c.character,
+    profile_path: c.profile_path ? `https://image.tmdb.org/t/p/w200${c.profile_path}` : null
+  }));
+
+  return {
+    cast,
+    runtime: data.runtime || 0,
+    genres: data.genres || []
+  };
+}
+
 export async function fetchSpotlightMovies(apiKey: string): Promise<SpotlightItem[]> {
   const isKeyValid = isValidApiKey(apiKey);
 
@@ -242,23 +272,17 @@ export async function fetchSpotlightMovies(apiKey: string): Promise<SpotlightIte
     throw new Error("Invalid TMDB API key");
   }
 
-  const ids = [157336, 579974, 19404];
-  const moods = ["thoughtful", "adrenaline", "feelgood"];
-  const moodNames = ["Drama & Sci-Fi", "Action & Thriller", "Romance & Feel-Good"];
-  const quotes = [
-    "Mankind was born on Earth. It was never meant to die here.",
-    "Fire and Water collide to forge an unbreakable bond.",
-    "Bade bade deshon mein aisi chhoti chhoti baatein hoti rehti hain."
-  ];
-
   const results: SpotlightItem[] = [];
+  const url = `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey.trim()}`;
+  const response = await fetch(url);
+  if (response.ok) {
+    const data = await response.json();
+    const topMovies = data.results.slice(0, 3);
+    const moods = ["trending", "popular", "hot"];
+    const moodNames = ["Trending Now", "Popular Choice", "Hot Release"];
 
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
-    const url = `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey.trim()}`;
-    const response = await fetch(url);
-    if (response.ok) {
-      const m = await response.json();
+    for (let i = 0; i < topMovies.length; i++) {
+      const m = topMovies[i];
       const bgUrl = m.backdrop_path
         ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}`
         : "";
@@ -270,11 +294,11 @@ export async function fetchSpotlightMovies(apiKey: string): Promise<SpotlightIte
         rating: m.vote_average,
         moodId: moods[i],
         moodName: moodNames[i],
-        quote: m.tagline || quotes[i],
-        tagline: m.tagline || m.overview,
+        quote: m.overview.length > 80 ? `${m.overview.substring(0, 80)}...` : m.overview,
+        tagline: m.overview,
         backdropUrl: bgUrl,
         industry: m.original_language === "hi" ? "hi" : "en",
-        genreIds: m.genres ? m.genres.map((g: any) => g.id) : [],
+        genreIds: m.genre_ids || [],
         overview: m.overview
       });
     }
@@ -338,7 +362,7 @@ export async function fetchLandingFeeds(apiKey: string): Promise<LandingFeeds> {
   const featuredUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&sort_by=popularity.desc&vote_count.gte=1000`;
   const bollywoodUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc`;
   const hollywoodUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_original_language=en&with_origin_country=US&sort_by=popularity.desc`;
-  const adult18Url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&include_adult=true&sort_by=popularity.desc`;
+  const adult18Url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&include_adult=true&sort_by=popularity.desc&with_genres=10749|18|53&with_keywords=9748|254884|12241|12242|170707&without_genres=27,16,14,10751`;
   const highestRatedActionUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_genres=28&sort_by=vote_average.desc&vote_count.gte=100`;
 
   const [featuredRes, bollyRes, hollyRes, adultRes, actionRes] = await Promise.all([
@@ -387,48 +411,3 @@ export async function fetchLandingFeeds(apiKey: string): Promise<LandingFeeds> {
     highestRatedAction: actionList,
   };
 }
-
-export const PRESET_SPOTLIGHTS: SpotlightItem[] = [
-  {
-    id: 157336,
-    title: "Interstellar",
-    year: "2014",
-    rating: 8.4,
-    moodId: "thoughtful",
-    moodName: "Drama & Sci-Fi",
-    quote: "Mankind was born on Earth. It was never meant to die here.",
-    tagline: "The end of Earth will not be the end of us. A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
-    backdropUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200",
-    industry: "en",
-    genreIds: [18, 878],
-    overview: "The adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel."
-  },
-  {
-    id: 579974,
-    title: "RRR",
-    year: "2022",
-    rating: 7.8,
-    moodId: "adrenaline",
-    moodName: "Action & Thriller",
-    quote: "Fire and Water collide to forge an unbreakable bond.",
-    tagline: "Rise, Roar, Revolt. Experience the absolute summit of action choreography and cinematic brotherhood.",
-    backdropUrl: "https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&q=80&w=1200",
-    industry: "hi",
-    genreIds: [28, 12, 18],
-    overview: "A fictional history of two legendary revolutionaries' journey away from home before they began fighting for their country in the 1920s."
-  },
-  {
-    id: 19404,
-    title: "Dilwale Dulhania Le Jayenge",
-    year: "1995",
-    rating: 8.5,
-    moodId: "feelgood",
-    moodName: "Romance & Feel-Good",
-    quote: "Bade bade deshon mein aisi chhoti chhoti baatein hoti rehti hain.",
-    tagline: "The legendary, longest-running golden standard of Indian romantic cinema.",
-    backdropUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80&w=1200",
-    industry: "hi",
-    genreIds: [35, 18, 10749],
-    overview: "Raj is a rich, carefree, happy-go-lucky second generation NRI. Simran is the daughter of a traditional, conservative NRI. They meet on a European vacation and fall in love."
-  }
-];
