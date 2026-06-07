@@ -40,7 +40,7 @@ const getSavedApiKey = (): string => {
       return saved.trim();
     }
   } catch {}
-  return ((import.meta as any).env.VITE_TMDB_API_KEY || "").trim();
+  return (import.meta.env.VITE_TMDB_API_KEY || "").trim();
 };
 
 const PRESET_SPOTLIGHTS: SpotlightItem[] = [
