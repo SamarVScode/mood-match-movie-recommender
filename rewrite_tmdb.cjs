@@ -1,4 +1,6 @@
-import { Movie, Review, FilterConfig, SpotlightItem, countActiveFilters } from "./types";
+const fs = require('fs');
+
+const code = `import { Movie, Review, FilterConfig, SpotlightItem, countActiveFilters } from "./types";
 
 // Map the abstract Mood tags to TMDB genre ID arrays
 export function mapMoodToGenres(mood: string | null): number[] {
@@ -56,9 +58,9 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
   // 1. HOME SCREEN MIX: When no filters are selected, pull & interleave standard trending/imdb feeds
   if (isDefaultOverview) {
     const urls = [
-      `https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey.trim()}&language=en-US&page=1`,
-      `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey.trim()}&language=en-US&page=1`,
-      `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey.trim()}&language=en-US&page=1`
+      \`https://api.themoviedb.org/3/movie/top_rated?api_key=\${apiKey.trim()}&language=en-US&page=1\`,
+      \`https://api.themoviedb.org/3/movie/popular?api_key=\${apiKey.trim()}&language=en-US&page=1\`,
+      \`https://api.themoviedb.org/3/movie/now_playing?api_key=\${apiKey.trim()}&language=en-US&page=1\`
     ];
     const responses = await Promise.all(urls.map(u => fetch(u).then(res => res.ok ? res.json() : null)));
 
@@ -95,7 +97,7 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
       vote_average: m.vote_average || 0.0,
       overview: m.overview || "No plot overview provided.",
       poster_path: m.poster_path
-        ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+        ? \`https://image.tmdb.org/t/p/w500\${m.poster_path}\`
         : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&q=80&w=500",
       genre_ids: m.genre_ids || [],
       popularity: m.popularity || 0
@@ -142,11 +144,9 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
       params.append("primary_release_year", config.exactYear);
     } else {
       const currentYear = 2026;
-      if (config.era === "all") {
-        // no date constraints
-      } else if (config.era === "latest") {
-        params.append("primary_release_date.gte", `${currentYear - 3}-01-01`);
-        params.append("primary_release_date.lte", `${currentYear}-12-31`);
+      if (config.era === "latest") {
+        params.append("primary_release_date.gte", \`\${currentYear - 3}-01-01\`);
+        params.append("primary_release_date.lte", \`\${currentYear}-12-31\`);
       } else if (config.era === "2010s") {
         params.append("primary_release_date.gte", "2010-01-01");
         params.append("primary_release_date.lte", "2019-12-31");
@@ -175,9 +175,9 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
     }
   }
 
-  const response = await fetch(`${finalUrl}?${params.toString()}`);
+  const response = await fetch(\`\${finalUrl}?\${params.toString()}\`);
   if (!response.ok) {
-    throw new Error(`TMDB HTTP failure: Status code ${response.status}`);
+    throw new Error(\`TMDB HTTP failure: Status code \${response.status}\`);
   }
 
   const data = await response.json();
@@ -223,7 +223,7 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
     vote_average: m.vote_average || 0.0,
     overview: m.overview || "No plot overview provided.",
     poster_path: m.poster_path
-      ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+      ? \`https://image.tmdb.org/t/p/w500\${m.poster_path}\`
       : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&q=80&w=500",
     genre_ids: m.genre_ids || [],
     popularity: m.popularity || 0
@@ -255,12 +255,12 @@ export async function fetchSpotlightMovies(apiKey: string): Promise<SpotlightIte
 
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i];
-    const url = `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey.trim()}`;
+    const url = \`https://api.themoviedb.org/3/movie/\${id}?api_key=\${apiKey.trim()}\`;
     const response = await fetch(url);
     if (response.ok) {
       const m = await response.json();
       const bgUrl = m.backdrop_path
-        ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}`
+        ? \`https://image.tmdb.org/t/p/w1280\${m.backdrop_path}\`
         : "";
 
       results.push({
@@ -297,10 +297,10 @@ export async function getMovieReviews(apiKey: string, movieId: number, movieTitl
     throw new Error("Invalid TMDB API key");
   }
 
-  const url = `https://api.themoviedb.org/3/movie/${movieId}/reviews?api_key=${apiKey.trim()}`;
+  const url = \`https://api.themoviedb.org/3/movie/\${movieId}/reviews?api_key=\${apiKey.trim()}\`;
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`TMDB Reviews error ${response.status}`);
+    throw new Error(\`TMDB Reviews error \${response.status}\`);
   }
   const data = await response.json();
   const results = data.results || [];
@@ -321,7 +321,6 @@ export interface LandingFeeds {
   hollywood: Movie[];
   adult18: Movie[];
   highestRatedAction: Movie[];
-  isMock?: boolean;
 }
 
 /**
@@ -335,11 +334,11 @@ export async function fetchLandingFeeds(apiKey: string): Promise<LandingFeeds> {
   }
 
   // Discovery engine endpoints
-  const featuredUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&sort_by=popularity.desc&vote_count.gte=1000`;
-  const bollywoodUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc`;
-  const hollywoodUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_original_language=en&with_origin_country=US&sort_by=popularity.desc`;
-  const adult18Url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&include_adult=true&sort_by=popularity.desc`;
-  const highestRatedActionUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey.trim()}&with_genres=28&sort_by=vote_average.desc&vote_count.gte=100`;
+  const featuredUrl = \`https://api.themoviedb.org/3/discover/movie?api_key=\${apiKey.trim()}&sort_by=popularity.desc&vote_count.gte=1000\`;
+  const bollywoodUrl = \`https://api.themoviedb.org/3/discover/movie?api_key=\${apiKey.trim()}&with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc\`;
+  const hollywoodUrl = \`https://api.themoviedb.org/3/discover/movie?api_key=\${apiKey.trim()}&with_original_language=en&with_origin_country=US&sort_by=popularity.desc\`;
+  const adult18Url = \`https://api.themoviedb.org/3/discover/movie?api_key=\${apiKey.trim()}&include_adult=true&sort_by=popularity.desc\`;
+  const highestRatedActionUrl = \`https://api.themoviedb.org/3/discover/movie?api_key=\${apiKey.trim()}&with_genres=28&sort_by=vote_average.desc&vote_count.gte=100\`;
 
   const [featuredRes, bollyRes, hollyRes, adultRes, actionRes] = await Promise.all([
     fetch(featuredUrl).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
@@ -357,7 +356,7 @@ export async function fetchLandingFeeds(apiKey: string): Promise<LandingFeeds> {
     vote_average: m.vote_average || 0.0,
     overview: m.overview || "No plot overview provided.",
     poster_path: m.poster_path
-      ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+      ? \`https://image.tmdb.org/t/p/w500\${m.poster_path}\`
       : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&q=80&w=500",
     genre_ids: m.genre_ids || [],
     popularity: m.popularity || 0
@@ -432,3 +431,6 @@ export const PRESET_SPOTLIGHTS: SpotlightItem[] = [
     overview: "Raj is a rich, carefree, happy-go-lucky second generation NRI. Simran is the daughter of a traditional, conservative NRI. They meet on a European vacation and fall in love."
   }
 ];
+`;
+
+fs.writeFileSync('src/tmdb.ts', code);

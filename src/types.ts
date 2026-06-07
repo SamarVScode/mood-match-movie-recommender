@@ -54,7 +54,7 @@ export function countActiveFilters(config: FilterConfig): number {
   if (config.industry && config.industry !== "all") count++;
   if (config.exactYear && config.exactYear !== "any") {
     count++;
-  } else if (config.era && config.era !== "latest") {
+  } else if (config.era && config.era !== "all") {
     count++;
   }
   if (config.minRating !== undefined && config.minRating !== 5.0) count++;

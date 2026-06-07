@@ -280,6 +280,7 @@ export default function FilterSidebar({
               }`}
               id="era-selector"
             >
+              <option value="all">Any Era (All Time)</option>
               <option value="latest">Latest Releases (2023 - 2026)</option>
               <option value="2010s">2010s Mid-Era (2010 - 2019)</option>
               <option value="2000s">Y2K Nostalgia (2000 - 2009)</option>
