@@ -168,7 +168,7 @@ export default function FilterSidebar({
               </h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed mt-1">
                 {isMockMode 
-                  ? "Streaming local high-fidelity Hollywood & Bollywood reels. Set VITE_TMDB_API_KEY in .env to unlock real-time global databases."
+                  ? "Streaming local high-fidelity Hollywood & Bollywood reels. Set VITE_TMDB_API_KEY (v4 Read Access Token) in .env to unlock real-time global databases."
                   : "API connection active. Sourcing direct catalogs from cloud registers."
                 }
               </p>
@@ -280,6 +280,7 @@ export default function FilterSidebar({
               }`}
               id="era-selector"
             >
+              <option value="all">Any Era (All Time)</option>
               <option value="latest">Latest Releases (2023 - 2026)</option>
               <option value="2010s">2010s Mid-Era (2010 - 2019)</option>
               <option value="2000s">Y2K Nostalgia (2000 - 2009)</option>

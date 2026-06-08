@@ -15,6 +15,19 @@ export interface Review {
   content: string;
 }
 
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface MovieDetail extends Movie {
+  cast: CastMember[];
+  runtime: number;
+  genres: { id: number; name: string }[];
+}
+
 export interface FilterConfig {
   industry: "all" | "en" | "hi";
   era: "all" | "latest" | "2010s" | "2000s" | "classic";
@@ -54,7 +67,7 @@ export function countActiveFilters(config: FilterConfig): number {
   if (config.industry && config.industry !== "all") count++;
   if (config.exactYear && config.exactYear !== "any") {
     count++;
-  } else if (config.era && config.era !== "latest") {
+  } else if (config.era && config.era !== "all") {
     count++;
   }
   if (config.minRating !== undefined && config.minRating !== 5.0) count++;
