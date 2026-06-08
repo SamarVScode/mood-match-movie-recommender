@@ -30,6 +30,36 @@ export function mapMoodToGenres(mood: string | null): number[] {
 /**
  * Checks if a TMDB API Key looks valid
  */
+
+function getAuthOptions(apiKey: string, url: string): { url: string, options: any } {
+  const token = apiKey.trim();
+  if (token.length > 50) {
+    // Looks like a v4 Read Access Token
+    return {
+      url,
+      options: {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      }
+    };
+  } else {
+    // Looks like a v3 API Key
+    const separator = url.includes('?') ? '&' : '?';
+    return {
+      url: `${url}${separator}api_key=${token}`,
+      options: {
+        method: 'GET',
+        headers: {
+          accept: 'application/json'
+        }
+      }
+    };
+  }
+}
+
 export function isValidApiKey(key: string): boolean {
   if (!key) return false;
   const tidied = key.trim();
@@ -55,19 +85,15 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
 
   // 1. HOME SCREEN MIX: When no filters are selected, pull & interleave standard trending/imdb feeds
   if (isDefaultOverview) {
-    const fetchOptions = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  };
     const urls = [
       `https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1`,
       `https://api.themoviedb.org/3/movie/popular?language=en-US&page=1`,
       `https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1`
     ];
-    const responses = await Promise.all(urls.map(u => fetch(u, fetchOptions).then(res => res.ok ? res.json() : null)));
+    const responses = await Promise.all(urls.map(u => {
+      const auth = getAuthOptions(apiKey, u);
+      return fetch(auth.url, auth.options).then(res => res.ok ? res.json() : null);
+    }));
 
     const topRated = responses[0]?.results || [];
     const popular = responses[1]?.results || [];
@@ -182,13 +208,8 @@ export async function fetchFilteredMovies(apiKey: string, config: FilterConfig):
     }
   }
 
-  const response = await fetch(`${finalUrl}?${params.toString()}`, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  });
+  const auth = getAuthOptions(apiKey, `${finalUrl}?${params.toString()}`);
+  const response = await fetch(auth.url, auth.options);
   if (!response.ok) {
     throw new Error(`TMDB HTTP failure: Status code ${response.status}`);
   }
@@ -255,14 +276,8 @@ export async function getMovieDetails(apiKey: string, movieId: number): Promise<
   const isKeyValid = isValidApiKey(apiKey);
   if (!isKeyValid) throw new Error("Invalid TMDB API key");
 
-  const url = `https://api.themoviedb.org/3/movie/${movieId}?append_to_response=credits`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  });
+  const auth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/movie/${movieId}?append_to_response=credits`);
+  const response = await fetch(auth.url, auth.options);
 
   if (!response.ok) {
     throw new Error(`TMDB Movie Details error ${response.status}`);
@@ -292,14 +307,8 @@ export async function fetchSpotlightMovies(apiKey: string): Promise<SpotlightIte
   }
 
   const results: SpotlightItem[] = [];
-  const url = `https://api.themoviedb.org/3/trending/movie/day`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  });
+  const auth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/trending/movie/day`);
+  const response = await fetch(auth.url, auth.options);
   if (response.ok) {
     const data = await response.json();
     const topMovies = data.results.slice(0, 3);
@@ -346,14 +355,8 @@ export async function getMovieReviews(apiKey: string, movieId: number, movieTitl
     throw new Error("Invalid TMDB API key");
   }
 
-  const url = `https://api.themoviedb.org/3/movie/${movieId}/reviews`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  });
+  const auth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/movie/${movieId}/reviews`);
+  const response = await fetch(auth.url, auth.options);
   if (!response.ok) {
     throw new Error(`TMDB Reviews error ${response.status}`);
   }
@@ -390,25 +393,18 @@ export async function fetchLandingFeeds(apiKey: string): Promise<LandingFeeds> {
   }
 
   // Discovery engine endpoints
-  const fetchOptions = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
-    }
-  };
-  const featuredUrl = `https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&vote_count.gte=1000`;
-  const bollywoodUrl = `https://api.themoviedb.org/3/discover/movie?with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc`;
-  const hollywoodUrl = `https://api.themoviedb.org/3/discover/movie?with_original_language=en&with_origin_country=US&sort_by=popularity.desc`;
-  const adult18Url = `https://api.themoviedb.org/3/discover/movie?include_adult=true&sort_by=popularity.desc&with_genres=10749|18|53&with_keywords=9748|254884|12241|12242|170707&without_genres=27,16,14,10751`;
-  const highestRatedActionUrl = `https://api.themoviedb.org/3/discover/movie?with_genres=28&sort_by=vote_average.desc&vote_count.gte=100`;
+  const featuredAuth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&vote_count.gte=1000`);
+  const bollywoodAuth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/discover/movie?with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc`);
+  const hollywoodAuth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/discover/movie?with_original_language=en&with_origin_country=US&sort_by=popularity.desc`);
+  const adult18Auth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/discover/movie?include_adult=true&sort_by=popularity.desc&with_genres=10749|18|53&with_keywords=9748|254884|12241|12242|170707&without_genres=27,16,14,10751`);
+  const actionAuth = getAuthOptions(apiKey, `https://api.themoviedb.org/3/discover/movie?with_genres=28&sort_by=vote_average.desc&vote_count.gte=100`);
 
   const [featuredRes, bollyRes, hollyRes, adultRes, actionRes] = await Promise.all([
-    fetch(featuredUrl, fetchOptions).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
-    fetch(bollywoodUrl, fetchOptions).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
-    fetch(hollywoodUrl, fetchOptions).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
-    fetch(adult18Url, fetchOptions).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
-    fetch(highestRatedActionUrl, fetchOptions).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
+    fetch(featuredAuth.url, featuredAuth.options).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
+    fetch(bollywoodAuth.url, bollywoodAuth.options).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
+    fetch(hollywoodAuth.url, hollywoodAuth.options).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
+    fetch(adult18Auth.url, adult18Auth.options).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
+    fetch(actionAuth.url, actionAuth.options).then(r => r.ok ? r.json() : { results: [] }).catch(() => ({ results: [] })),
   ]);
 
   const mapper = (results: any[]) => (results || []).slice(0, 16).map((m: any) => ({
